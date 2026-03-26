@@ -254,6 +254,19 @@ end
     y == 3 && return x * x * x
     x^Float16(y)
 end
+@device_override function Base.:(^)(z::Complex{Float32}, w::Complex{Float32})
+    iszero(w) && return Complex(one(1), Float32(0))
+    c, d = reim(w) # Avoid using widen(w) as in Base
+    a, b = reim(z) # Avoid using widen(z) as in Base
+    if (isinf(c) | isinf(d))
+        if isfinite(z)
+            return complex(zero(Float32)*sign(real(z))*sign(real(w)), -zero(Float32)*sign(imag(z))*sign(imag(w)))
+        end
+        return Float32(NaN)+Float32(NaN)*im
+    end
+    return return exp(z*log(w))
+end
+
 
 @device_function powr_fast(x::Float32, y::Float32) = ccall("extern air.fast_powr.f32", llvmcall, Cfloat, (Cfloat, Cfloat), x, y)
 @device_function powr(x::Float32, y::Float32) = ccall("extern air.powr.f32", llvmcall, Cfloat, (Cfloat, Cfloat), x, y)
